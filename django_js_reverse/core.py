@@ -3,7 +3,7 @@ import re
 import sys
 
 from django.conf import settings
-from django.core import urlresolvers
+from django.urls import get_ns_resolver, get_script_prefix
 from django.core.exceptions import ImproperlyConfigured
 from django.template import loader
 
@@ -11,7 +11,6 @@ from . import rjsmin
 from .js_reverse_settings import (JS_EXCLUDE_NAMESPACES, JS_GLOBAL_OBJECT_NAME,
                                   JS_INCLUDE_ONLY_NAMESPACES, JS_MINIFY,
                                   JS_VAR_NAME)
-
 if sys.version < '3':
     text_type = unicode  # NOQA
 else:
@@ -24,8 +23,10 @@ def prepare_url_list(urlresolver, namespace_path='', namespace=''):
     """
     returns list of tuples [(<url_name>, <url_patern_tuple> ), ...]
     """
-    exclude_ns = getattr(settings, 'JS_REVERSE_EXCLUDE_NAMESPACES', JS_EXCLUDE_NAMESPACES)
-    include_only_ns = getattr(settings, 'JS_REVERSE_INCLUDE_ONLY_NAMESPACES', JS_INCLUDE_ONLY_NAMESPACES)
+    exclude_ns = getattr(
+        settings, 'JS_REVERSE_EXCLUDE_NAMESPACES', JS_EXCLUDE_NAMESPACES)
+    include_only_ns = getattr(
+        settings, 'JS_REVERSE_INCLUDE_ONLY_NAMESPACES', JS_INCLUDE_ONLY_NAMESPACES)
 
     if exclude_ns and include_only_ns:
         raise ImproperlyConfigured(
@@ -79,8 +80,8 @@ def prepare_url_list(urlresolver, namespace_path='', namespace=''):
         # if we have inner_ns_path, reconstruct a new resolver so that we can
         # handle regex substitutions within the regex of a namespace.
         if inner_ns_path:
-            inner_urlresolver = urlresolvers.get_ns_resolver(inner_ns_path,
-                                                             inner_urlresolver)
+            inner_urlresolver = get_ns_resolver(inner_ns_path,
+                                                inner_urlresolver)
             inner_ns_path = ''
 
         for x in prepare_url_list(inner_urlresolver, inner_ns_path, inner_ns):
@@ -93,7 +94,8 @@ def generate_js(default_urlresolver):
         raise ImproperlyConfigured(
             'JS_REVERSE_JS_VAR_NAME setting "%s" is not a valid javascript identifier.' % (js_var_name))
 
-    js_global_object_name = getattr(settings, 'JS_REVERSE_JS_GLOBAL_OBJECT_NAME', JS_GLOBAL_OBJECT_NAME)
+    js_global_object_name = getattr(
+        settings, 'JS_REVERSE_JS_GLOBAL_OBJECT_NAME', JS_GLOBAL_OBJECT_NAME)
     if not JS_IDENTIFIER_RE.match(js_global_object_name.upper()):
         raise ImproperlyConfigured(
             'JS_REVERSE_JS_GLOBAL_OBJECT_NAME setting "%s" is not a valid javascript identifier.' % (
@@ -104,13 +106,14 @@ def generate_js(default_urlresolver):
         raise ImproperlyConfigured(
             'JS_REVERSE_JS_MINIFY setting "%s" is not a valid. Needs to be set to True or False.' % (minfiy))
 
-    script_prefix_via_config = getattr(settings, 'JS_REVERSE_SCRIPT_PREFIX', None)
+    script_prefix_via_config = getattr(
+        settings, 'JS_REVERSE_SCRIPT_PREFIX', None)
     if script_prefix_via_config:
         script_prefix = script_prefix_via_config
         if not script_prefix.endswith('/'):
             script_prefix = '{0}/'.format(script_prefix)
     else:
-        script_prefix = urlresolvers.get_script_prefix()
+        script_prefix = get_script_prefix()
 
     js_content = loader.render_to_string('django_js_reverse/urls_js.tpl', {
         'urls': sorted(list(prepare_url_list(default_urlresolver))),
