@@ -3,7 +3,7 @@ import os
 import sys
 
 from django.conf import settings
-from django.core import urlresolvers
+from django.urls import get_resolver
 from django.core.exceptions import ImproperlyConfigured
 from django.core.files.base import ContentFile
 from django.core.files.storage import FileSystemStorage
@@ -16,12 +16,14 @@ class Command(BaseCommand):
     help = 'Creates a static urls-js file for django-js-reverse'
 
     def get_location(self):
-        output_path = getattr(settings, 'JS_REVERSE_OUTPUT_PATH', JS_OUTPUT_PATH)
+        output_path = getattr(
+            settings, 'JS_REVERSE_OUTPUT_PATH', JS_OUTPUT_PATH)
         if output_path:
             return output_path
 
         if not hasattr(settings, 'STATIC_ROOT') or not settings.STATIC_ROOT:
-            raise ImproperlyConfigured('The collectstatic_js_reverse command needs settings.JS_REVERSE_OUTPUT_PATH or settings.STATIC_ROOT to be set.')
+            raise ImproperlyConfigured(
+                'The collectstatic_js_reverse command needs settings.JS_REVERSE_OUTPUT_PATH or settings.STATIC_ROOT to be set.')
 
         return os.path.join(settings.STATIC_ROOT, 'django_js_reverse', 'js')
 
@@ -32,8 +34,9 @@ class Command(BaseCommand):
         if fs.exists(file):
             fs.delete(file)
 
-        default_urlresolver = urlresolvers.get_resolver(None)
+        default_urlresolver = get_resolver(None)
         content = generate_js(default_urlresolver)
         fs.save(file, ContentFile(content))
         if len(sys.argv) > 1 and sys.argv[1] in ['collectstatic_js_reverse']:
-            self.stdout.write('js-reverse file written to %s' % (location))  # pragma: no cover
+            self.stdout.write('js-reverse file written to %s' %
+                              (location))  # pragma: no cover
